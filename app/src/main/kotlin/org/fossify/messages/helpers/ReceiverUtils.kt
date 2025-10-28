@@ -14,4 +14,21 @@ object ReceiverUtils {
 
         return false
     }
+
+    fun doesSMSContainBlockedKeywords(
+        context: Context,
+        senderName: String,
+        body: String,
+    ): Boolean {
+        for (blockedKeyword in context.config.blockedKeywords) {
+            if (
+                body.contains(blockedKeyword, ignoreCase = true) ||
+                senderName.contains(blockedKeyword, ignoreCase = true)
+            ) {
+                return true
+            }
+        }
+
+        return false
+    }
 }

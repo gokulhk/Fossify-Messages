@@ -23,7 +23,7 @@ import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
 import org.fossify.messages.extensions.updateConversationArchivedStatus
-import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
+import org.fossify.messages.helpers.ReceiverUtils.doesSMSContainBlockedKeywords
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.models.Message
@@ -76,10 +76,6 @@ class SmsReceiver : BroadcastReceiver() {
         subscriptionId: Int,
         status: Int
     ) {
-        if (isMessageFilteredOut(context, body)) {
-            return
-        }
-
         val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
         val bitmap = context.getNotificationBitmap(photoUri)
         Handler(Looper.getMainLooper()).post {
@@ -99,6 +95,7 @@ class SmsReceiver : BroadcastReceiver() {
                     val participant = SimpleContact(0, 0, senderName, photoUri, arrayListOf(phoneNumber), ArrayList(), ArrayList())
                     val participants = arrayListOf(participant)
                     val messageDate = (date / 1000).toInt()
+                    val shouldBlockMessage = doesSMSContainBlockedKeywords(context, senderName, body)
 
                     val message =
                         Message(
@@ -115,7 +112,9 @@ class SmsReceiver : BroadcastReceiver() {
                             address,
                             senderName,
                             photoUri,
-                            subscriptionId
+                            subscriptionId,
+                            false,
+                            shouldBlockMessage
                         )
                     context.messagesDB.insertOrUpdate(message)
                     if (context.shouldUnarchive()) {
@@ -123,7 +122,9 @@ class SmsReceiver : BroadcastReceiver() {
                     }
                     refreshMessages()
                     refreshConversations()
-                    context.showReceivedMessageNotification(newMessageId, address, body, threadId, bitmap)
+                    if (!shouldBlockMessage) {
+                        context.showReceivedMessageNotification(newMessageId, address, body, threadId, bitmap)
+                    }
                 }
             }
         }

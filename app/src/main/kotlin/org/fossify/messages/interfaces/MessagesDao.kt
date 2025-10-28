@@ -21,31 +21,34 @@ interface MessagesDao {
     @Query("SELECT * FROM messages")
     fun getAll(): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL")
+    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL and messages.is_blocked = 0")
     fun getAllRecycleBinMessages(): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND recycle_bin_messages.deleted_ts < :timestamp")
+    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND recycle_bin_messages.deleted_ts < :timestamp and messages.is_blocked = 0")
     fun getOldRecycleBinMessages(timestamp: Long): List<Message>
 
-    @Query("SELECT * FROM messages WHERE thread_id = :threadId")
+    @Query("SELECT * FROM messages WHERE thread_id = :threadId and messages.is_blocked = 0")
     fun getThreadMessages(threadId: Long): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId")
+    @Query("SELECT * FROM messages WHERE thread_id = :threadId and messages.is_blocked = 1")
+    fun getBlockedThreadMessages(threadId: Long): List<Message>
+
+    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId and messages.is_blocked = 0")
     fun getNonRecycledThreadMessages(threadId: Long): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND thread_id = :threadId")
+    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND thread_id = :threadId and messages.is_blocked = 0")
     fun getThreadMessagesFromRecycleBin(threadId: Long): List<Message>
 
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId AND is_scheduled = 1")
+    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND thread_id = :threadId AND is_scheduled = 1 and messages.is_blocked = 0")
     fun getScheduledThreadMessages(threadId: Long): List<Message>
 
-    @Query("SELECT * FROM messages WHERE thread_id = :threadId AND id = :messageId AND is_scheduled = 1")
+    @Query("SELECT * FROM messages WHERE thread_id = :threadId AND id = :messageId AND is_scheduled = 1 and messages.is_blocked = 0")
     fun getScheduledMessageWithId(threadId: Long, messageId: Long): Message
 
     @Query("SELECT COUNT(*) FROM recycle_bin_messages")
     fun getArchivedCount(): Int
 
-    @Query("SELECT * FROM messages WHERE body LIKE :text")
+    @Query("SELECT * FROM messages WHERE body LIKE :text and messages.is_blocked = 0")
     fun getMessagesWithText(text: String): List<Message>
 
     @Query("UPDATE messages SET read = 1 WHERE id = :id")
