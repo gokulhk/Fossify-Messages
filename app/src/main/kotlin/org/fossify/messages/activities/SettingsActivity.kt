@@ -13,6 +13,7 @@ import org.fossify.commons.extensions.addLockedLabelIfNeeded
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
+import org.fossify.commons.extensions.formatWithDeprecatedBadge
 import org.fossify.commons.extensions.getBlockedNumbers
 import org.fossify.commons.extensions.getFontSizeText
 import org.fossify.commons.extensions.getProperPrimaryColor
@@ -85,25 +86,19 @@ class SettingsActivity : SimpleActivity() {
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isMaterialActivity = true
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        updateMaterialActivityViews(
-            mainCoordinatorLayout = binding.settingsCoordinator,
-            nestedView = binding.settingsHolder,
-            useTransparentNavigation = true,
-            useTopSearchMenu = false
-        )
+        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.settingsNestedScrollview))
         setupMaterialScrollListener(
             scrollingView = binding.settingsNestedScrollview,
-            toolbar = binding.settingsToolbar
+            topAppBar = binding.settingsAppbar
         )
     }
 
     override fun onResume() {
         super.onResume()
-        setupToolbar(binding.settingsToolbar, NavigationIcon.Arrow)
+        setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow)
 
         setupCustomizeColors()
         setupCustomizeNotifications()
@@ -367,6 +362,9 @@ class SettingsActivity : SimpleActivity() {
     private fun setupUseRecycleBin() = binding.apply {
         updateRecycleBinButtons()
         settingsUseRecycleBin.isChecked = config.useRecycleBin
+        settingsUseRecycleBin.text = formatWithDeprecatedBadge(
+            labelRes = org.fossify.commons.R.string.move_items_into_recycle_bin
+        )
         settingsUseRecycleBinHolder.setOnClickListener {
             settingsUseRecycleBin.toggle()
             config.useRecycleBin = settingsUseRecycleBin.isChecked

@@ -1025,15 +1025,24 @@ fun Context.markMessageRead(id: Long, isMMS: Boolean) {
 }
 
 fun Context.markThreadMessagesRead(threadId: Long) {
-    arrayOf(Sms.CONTENT_URI, Mms.CONTENT_URI).forEach { uri ->
-        val contentValues = ContentValues().apply {
-            put(Sms.READ, 1)
-            put(Sms.SEEN, 1)
-        }
-        val selection = "${Sms.THREAD_ID} = ?"
-        val selectionArgs = arrayOf(threadId.toString())
-        contentResolver.update(uri, contentValues, selection, selectionArgs)
+    val id = threadId.toString()
+
+    val smsValues = ContentValues().apply {
+        put(Sms.READ, 1)
+        put(Sms.SEEN, 1)
     }
+    val smsSelection = "${Sms.THREAD_ID}=? AND ${Sms.TYPE}=? AND (${Sms.READ}=? OR ${Sms.SEEN}=?)"
+    val smsArgs = arrayOf(id, Sms.MESSAGE_TYPE_INBOX.toString(), "0", "0")
+    contentResolver.update(Sms.CONTENT_URI, smsValues, smsSelection, smsArgs)
+
+    val mmsValues = ContentValues().apply {
+        put(Mms.READ, 1)
+        put(Mms.SEEN, 1)
+    }
+    val mmsSelection = "${Mms.THREAD_ID}=? AND ${Mms.MESSAGE_BOX}=? AND (${Mms.READ}=? OR ${Mms.SEEN}=?)"
+    val mmsArgs = arrayOf(id, Mms.MESSAGE_BOX_INBOX.toString(), "0", "0")
+    contentResolver.update(Mms.CONTENT_URI, mmsValues, mmsSelection, mmsArgs)
+
     messagesDB.markThreadRead(threadId)
     conversationsDB.markRead(threadId)
 }
@@ -1072,24 +1081,20 @@ fun Context.getThreadId(addresses: Set<String>): Long {
 fun Context.showReceivedMessageNotification(
     messageId: Long,
     address: String,
+    senderName: String,
     body: String,
     threadId: Long,
     bitmap: Bitmap?,
 ) {
-    val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-    ensureBackgroundThread {
-        val senderName = getNameFromAddress(address, privateCursor)
-
-        Handler(Looper.getMainLooper()).post {
-            notificationHelper.showMessageNotification(
-                messageId = messageId,
-                address = address,
-                body = body,
-                threadId = threadId,
-                bitmap = bitmap,
-                sender = senderName
-            )
-        }
+    Handler(Looper.getMainLooper()).post {
+        notificationHelper.showMessageNotification(
+            messageId = messageId,
+            address = address,
+            body = body,
+            threadId = threadId,
+            bitmap = bitmap,
+            sender = senderName
+        )
     }
 }
 

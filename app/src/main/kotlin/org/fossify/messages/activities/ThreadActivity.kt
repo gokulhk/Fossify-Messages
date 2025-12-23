@@ -28,6 +28,7 @@ import android.text.format.DateUtils.FORMAT_SHOW_TIME
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.OvershootInterpolator
@@ -42,8 +43,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.documentfile.provider.DocumentFile
@@ -61,6 +60,7 @@ import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
+import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.darkenColor
 import org.fossify.commons.extensions.formatDate
 import org.fossify.commons.extensions.getBottomNavigationBackgroundColor
@@ -74,6 +74,7 @@ import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.hideKeyboard
+import org.fossify.commons.extensions.insetsController
 import org.fossify.commons.extensions.isDynamicTheme
 import org.fossify.commons.extensions.isOrWasThankYouInstalled
 import org.fossify.commons.extensions.isVisible
@@ -240,19 +241,18 @@ class ThreadActivity : SimpleActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isMaterialActivity = true
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         setupOptionsMenu()
         refreshMenuItems()
-
-        updateMaterialActivityViews(
-            mainCoordinatorLayout = binding.threadCoordinator,
-            nestedView = null,
-            useTransparentNavigation = false,
-            useTopSearchMenu = false
+        setupEdgeToEdge(
+            padBottomImeAndSystem = listOf(
+                binding.messageHolder.root,
+                binding.shortCodeHolder.root
+            )
         )
-        setupMaterialScrollListener(null, binding.threadToolbar)
+        setupMessagingEdgeToEdge()
+        setupMaterialScrollListener(null, binding.threadAppbar)
 
         val extras = intent.extras
         if (extras == null) {
@@ -274,17 +274,16 @@ class ThreadActivity : SimpleActivity() {
 
         loadConversation()
         setupAttachmentPickerView()
-        setupKeyboardListener()
         hideAttachmentPicker()
         maybeSetupRecycleBinView()
     }
 
     override fun onResume() {
         super.onResume()
-        setupToolbar(
-            toolbar = binding.threadToolbar,
-            toolbarNavigationIcon = NavigationIcon.Arrow,
-            statusBarColor = getProperBackgroundColor()
+        setupTopAppBar(
+            topAppBar = binding.threadAppbar,
+            navigationIcon = NavigationIcon.Arrow,
+            topBarColor = getProperBackgroundColor()
         )
 
         isActivityVisible = true
@@ -314,7 +313,6 @@ class ThreadActivity : SimpleActivity() {
         val bottomBarColor = getBottomBarColor()
         binding.messageHolder.root.setBackgroundColor(bottomBarColor)
         binding.shortCodeHolder.root.setBackgroundColor(bottomBarColor)
-        updateNavigationBarColor(bottomBarColor)
     }
 
     override fun onPause() {
@@ -329,12 +327,13 @@ class ThreadActivity : SimpleActivity() {
         saveDraftMessage()
     }
 
-    override fun onBackPressed() {
+    override fun onBackPressedCompat(): Boolean {
         isAttachmentPickerVisible = false
-        if (binding.messageHolder.attachmentPickerHolder.isVisible()) {
+        return if (binding.messageHolder.attachmentPickerHolder.isVisible()) {
             hideAttachmentPicker()
+            true
         } else {
-            super.onBackPressed()
+            false
         }
     }
 
@@ -375,36 +374,39 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.manage_people).isVisible = !isSpecialNumber() && !isRecycleBin
             findItem(R.id.mark_as_unread).isVisible = threadItems.isNotEmpty() && !isRecycleBin
 
-            // allow saving number in cases when we don't have it stored yet and it is a casual readable number
+            // allow saving number in cases when we don't have it stored yet
             findItem(R.id.add_number_to_contact).isVisible =
-                participants.size == 1 && participants.first().name == firstPhoneNumber && firstPhoneNumber.any {
-                    it.isDigit()
-                } && !isRecycleBin
+                participants.size == 1 && participants.first().name == firstPhoneNumber && !isRecycleBin
+            findItem(R.id.copy_number).isVisible =
+                participants.size == 1 && !firstPhoneNumber.isNullOrEmpty() && !isRecycleBin
         }
     }
 
     private fun setupOptionsMenu() {
         binding.threadToolbar.setOnMenuItemClickListener { menuItem ->
-            if (participants.isEmpty()) {
-                return@setOnMenuItemClickListener true
-            }
-
-            when (menuItem.itemId) {
-                R.id.block_number -> tryBlocking()
-                R.id.delete -> askConfirmDelete()
-                R.id.restore -> askConfirmRestoreAll()
-                R.id.archive -> archiveConversation()
-                R.id.unarchive -> unarchiveConversation()
-                R.id.rename_conversation -> renameConversation()
-                R.id.conversation_details -> launchConversationDetails(threadId)
-                R.id.add_number_to_contact -> addNumberToContact()
-                R.id.dial_number -> dialNumber()
-                R.id.manage_people -> managePeople()
-                R.id.mark_as_unread -> markAsUnread()
-                else -> return@setOnMenuItemClickListener false
-            }
-            return@setOnMenuItemClickListener true
+            if (participants.isEmpty()) return@setOnMenuItemClickListener true
+            return@setOnMenuItemClickListener handleMenuItemAction(menuItem)
         }
+    }
+
+    private fun handleMenuItemAction(menuItem: MenuItem): Boolean {
+        when (menuItem.itemId) {
+            R.id.block_number -> tryBlocking()
+            R.id.delete -> askConfirmDelete()
+            R.id.restore -> askConfirmRestoreAll()
+            R.id.archive -> archiveConversation()
+            R.id.unarchive -> unarchiveConversation()
+            R.id.rename_conversation -> renameConversation()
+            R.id.conversation_details -> launchConversationDetails(threadId)
+            R.id.add_number_to_contact -> addNumberToContact()
+            R.id.copy_number -> copyNumberToClipboard()
+            R.id.dial_number -> dialNumber()
+            R.id.manage_people -> managePeople()
+            R.id.mark_as_unread -> markAsUnread()
+            else -> return false
+        }
+
+        return true
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -930,15 +932,16 @@ class ThreadActivity : SimpleActivity() {
             threadAddAttachment.setOnClickListener {
                 if (attachmentPickerHolder.isVisible()) {
                     isAttachmentPickerVisible = false
-                    WindowCompat.getInsetsController(window, threadTypeMessage)
+                    hideAttachmentPicker()
+                    window.insetsController(binding.messageHolder.threadTypeMessage)
                         .show(WindowInsetsCompat.Type.ime())
                 } else {
                     isAttachmentPickerVisible = true
-                    showOrHideAttachmentPicker()
-                    WindowCompat.getInsetsController(window, threadTypeMessage)
+                    showAttachmentPicker()
+                    window.insetsController(binding.messageHolder.threadTypeMessage)
                         .hide(WindowInsetsCompat.Type.ime())
                 }
-                window.decorView.requestApplyInsets()
+                binding.messageHolder.threadTypeMessage.requestApplyInsets()
             }
 
             if (intent.extras?.containsKey(THREAD_ATTACHMENT_URI) == true) {
@@ -1194,6 +1197,13 @@ class ThreadActivity : SimpleActivity() {
     private fun dialNumber() {
         val phoneNumber = participants.first().phoneNumbers.first().normalizedNumber
         dialNumber(phoneNumber)
+    }
+
+    private fun copyNumberToClipboard() {
+        val phoneNumber = conversation?.phoneNumber
+            ?.ifEmpty { participants.firstOrNull()?.phoneNumbers?.firstOrNull()?.value }
+            ?: return
+        copyToClipboard(phoneNumber)
     }
 
     private fun managePeople() {
@@ -2083,52 +2093,35 @@ class ThreadActivity : SimpleActivity() {
             .start()
     }
 
-    private fun setupKeyboardListener() {
-        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
-            showOrHideAttachmentPicker()
-            view.onApplyWindowInsets(insets)
-        }
-
-        val callback =
-            object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
-                override fun onPrepare(animation: WindowInsetsAnimationCompat) {
-                    super.onPrepare(animation)
-                    showOrHideAttachmentPicker()
-                }
-
-                override fun onProgress(
-                    insets: WindowInsetsCompat,
-                    runningAnimations: MutableList<WindowInsetsAnimationCompat>,
-                ) = insets
-            }
-        ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
-    }
-
-    private fun showOrHideAttachmentPicker() {
-        val type = WindowInsetsCompat.Type.ime()
-        val insets = ViewCompat.getRootWindowInsets(window.decorView) ?: return
-        val isKeyboardVisible = insets.isVisible(type)
-
-        if (isKeyboardVisible) {
-            val keyboardHeight = insets.getInsets(type).bottom
-            val bottomBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-
-            // check keyboard height just to be sure, 150 seems like a good middle ground between ime and navigation bar
-            config.keyboardHeight = if (keyboardHeight > 150) {
-                keyboardHeight - bottomBarHeight
-            } else {
-                getDefaultKeyboardHeight()
-            }
-            hideAttachmentPicker()
-        } else if (isAttachmentPickerVisible) {
-            showAttachmentPicker()
-        }
-    }
-
     private fun getBottomBarColor() = if (isDynamicTheme()) {
         resources.getColor(org.fossify.commons.R.color.you_bottom_bar_color)
     } else {
         getBottomNavigationBackgroundColor()
+    }
+
+    fun setupMessagingEdgeToEdge() {
+        ViewCompat.setOnApplyWindowInsetsListener(
+            binding.messageHolder.threadTypeMessage
+        ) { view, insets ->
+            val type = WindowInsetsCompat.Type.ime()
+            val isKeyboardVisible = insets.isVisible(type)
+            if (isKeyboardVisible) {
+                val keyboardHeight = insets.getInsets(type).bottom
+                val bottomBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
+
+                // check keyboard height just to be sure, 150 seems like a good middle ground between ime and navigation bar
+                config.keyboardHeight = if (keyboardHeight > 150) {
+                    keyboardHeight - bottomBarHeight
+                } else {
+                    getDefaultKeyboardHeight()
+                }
+                hideAttachmentPicker()
+            } else if (isAttachmentPickerVisible) {
+                showAttachmentPicker()
+            }
+
+            insets
+        }
     }
 
     companion object {
@@ -2137,6 +2130,6 @@ class ThreadActivity : SimpleActivity() {
         private const val TYPE_DELETE = 16
         private const val MIN_DATE_TIME_DIFF_SECS = 300
         private const val SCROLL_TO_BOTTOM_FAB_LIMIT = 20
-        private const val PREFETCH_THRESHOLD = 50
+        private const val PREFETCH_THRESHOLD = 45
     }
 }

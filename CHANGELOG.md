@@ -5,8 +5,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added "Copy number to clipboard" option inside chat overflow menu ([#651])
+
 ### Changed
+- Made "Add number to contact" option visible for alphanumeric senders ([#232])
+
+### Fixed
+- Fixed missing notifications in some cases ([#159])
+- Fixed incorrect blocking of MMS messages in some rare cases ([#644])
+
+## [1.7.0] - 2025-12-16
+### Added
+- Ability to select and copy multiple text messages at once ([#600])
+
+### Changed
+- Updated translations
+
+### Deprecated
+- Deprecated the recycle bin feature ([#290])
+
+### Fixed
+- Fixed new conversation shortcut ([#416])
+- Fixed blocking MMS messages from unknown numbers ([#610])
+
+## [1.6.0] - 2025-10-29
+### Changed
+- Compatibility updates for Android 15 & 16
 - Calling now works directly without launching dialpad ([#562])
+- Search bar is now pinned to the top when scrolling
+- Updated translations
+
+### Fixed
+- Fixed freezing when sending messages ([#574])
 
 ## [1.5.0] - 2025-10-18
 ### Added
@@ -166,6 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#115]: https://github.com/FossifyOrg/Messages/issues/115
 [#135]: https://github.com/FossifyOrg/Messages/issues/135
 [#153]: https://github.com/FossifyOrg/Messages/issues/153
+[#159]: https://github.com/FossifyOrg/Messages/issues/159
 [#165]: https://github.com/FossifyOrg/Messages/issues/165
 [#177]: https://github.com/FossifyOrg/Messages/issues/177
 [#180]: https://github.com/FossifyOrg/Messages/issues/180
@@ -180,6 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#279]: https://github.com/FossifyOrg/Messages/issues/279
 [#287]: https://github.com/FossifyOrg/Messages/issues/287
 [#288]: https://github.com/FossifyOrg/Messages/issues/288
+[#290]: https://github.com/FossifyOrg/Messages/issues/290
 [#294]: https://github.com/FossifyOrg/Messages/issues/294
 [#309]: https://github.com/FossifyOrg/Messages/issues/309
 [#334]: https://github.com/FossifyOrg/Messages/issues/334
@@ -187,12 +220,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#350]: https://github.com/FossifyOrg/Messages/issues/350
 [#359]: https://github.com/FossifyOrg/Messages/issues/359
 [#376]: https://github.com/FossifyOrg/Messages/issues/376
+[#416]: https://github.com/FossifyOrg/Messages/issues/416
 [#456]: https://github.com/FossifyOrg/Messages/issues/456
 [#461]: https://github.com/FossifyOrg/Messages/issues/461
-[#561]: https://github.com/FossifyOrg/Messages/pull/561
+[#561]: https://github.com/FossifyOrg/Messages/issues/561
 [#562]: https://github.com/FossifyOrg/Messages/issues/562
+[#574]: https://github.com/FossifyOrg/Messages/issues/574
+[#600]: https://github.com/FossifyOrg/Messages/issues/600
+[#610]: https://github.com/FossifyOrg/Messages/issues/610
+[#644]: https://github.com/FossifyOrg/Messages/issues/644
+[#651]: https://github.com/FossifyOrg/Messages/issues/651
 
-[Unreleased]: https://github.com/FossifyOrg/Messages/compare/1.5.0...HEAD
+[Unreleased]: https://github.com/FossifyOrg/Messages/compare/1.7.0...HEAD
+[1.7.0]: https://github.com/FossifyOrg/Messages/compare/1.6.0...1.7.0
+[1.6.0]: https://github.com/FossifyOrg/Messages/compare/1.5.0...1.6.0
 [1.5.0]: https://github.com/FossifyOrg/Messages/compare/1.4.0...1.5.0
 [1.4.0]: https://github.com/FossifyOrg/Messages/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/FossifyOrg/Messages/compare/1.2.3...1.3.0
