@@ -34,20 +34,14 @@ class BlockedConversationsActivity : SimpleActivity() {
 
   @SuppressLint("InlinedApi")
   override fun onCreate(savedInstanceState: Bundle?) {
-    isMaterialActivity = true
     super.onCreate(savedInstanceState)
     setContentView(binding.root)
     setupOptionsMenu()
 
-    updateMaterialActivityViews(
-        mainCoordinatorLayout = binding.blockedCoordinator,
-        nestedView = binding.conversationsList,
-        useTransparentNavigation = true,
-        useTopSearchMenu = false,
-    )
-    setupMaterialScrollListener(
-        scrollingView = binding.conversationsList,
-        toolbar = binding.blockedToolbar,
+      setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
+      setupMaterialScrollListener(
+          scrollingView = binding.conversationsList,
+          topAppBar = binding.blockedAppbar
     )
 
     loadBlockedConversations()
@@ -55,9 +49,7 @@ class BlockedConversationsActivity : SimpleActivity() {
 
   override fun onResume() {
     super.onResume()
-    setupToolbar(binding.blockedToolbar, NavigationIcon.Arrow)
-    updateMenuColors()
-
+    setupTopAppBar(binding.blockedAppbar, NavigationIcon.Arrow)
     loadBlockedConversations()
   }
 
@@ -81,10 +73,6 @@ class BlockedConversationsActivity : SimpleActivity() {
     binding.blockedToolbar.menu.apply {
       findItem(R.id.empty_blocked).isVisible = conversations.isNotEmpty()
     }
-  }
-
-  private fun updateMenuColors() {
-    updateStatusbarColor(getProperBackgroundColor())
   }
 
   private fun loadBlockedConversations() {
