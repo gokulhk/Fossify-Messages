@@ -498,16 +498,6 @@ class ThreadActivity : SimpleActivity() {
                     val recycledMessages = messagesDB.getThreadMessagesFromRecycleBin(threadId)
                     messages = messages.filterNotInByKey(recycledMessages) { it.getStableId() }
                 }
-
-//                if (isBlockedBin) {
-//                    val nonBlockedMessages = messagesDB.getThreadMessages(threadId)
-//                    val messagesById = messages.associateBy { it.id }
-//                    nonBlockedMessages.forEach { nonBlockedMessage -> messages.remove(messagesById[nonBlockedMessage.id]) }
-//                } else {
-//                    val blockedMessages = messagesDB.getBlockedThreadMessages(threadId)
-//                    val messagesById = messages.associateBy { it.id }
-//                    blockedMessages.forEach { blockedMessage -> messages.remove(messagesById[blockedMessage.id]) }
-//                }
             }
 
             val hasParticipantWithoutName = participants.any { contact ->
