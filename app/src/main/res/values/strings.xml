@@ -68,6 +68,13 @@
     <string name="archive_emptied_successfully">The archive has been emptied successfully</string>
     <string name="empty_archive_confirmation">Are you sure you want to empty the archive? All archived conversations will be permanently lost.</string>
     <string name="keep_conversations_archived">Keep conversations archived</string>
+    <!-- Blocked   -->
+    <string name="empty_blocked">Delete all blocked conversations</string>
+    <string name="blocked_conversations">Blocked</string>
+    <string name="show_blocked_conversations">Show blocked conversations</string>
+    <string name="no_blocked_conversations">No blocked conversations have been found</string>
+    <string name="blocked_emptied_successfully">The blocked has been emptied successfully</string>
+    <string name="empty_blocked_confirmation">Are you sure you want to empty the blocked? All blocked conversations will be permanently lost.</string>
     <!-- Recycle bin -->
     <string name="restore">Restore</string>
     <string name="restore_all_messages">Restore all messages</string>

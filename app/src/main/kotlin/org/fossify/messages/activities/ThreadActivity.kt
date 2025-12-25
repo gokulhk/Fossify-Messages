@@ -124,6 +124,7 @@ import org.fossify.messages.extensions.deleteMessage
 import org.fossify.messages.extensions.deleteScheduledMessage
 import org.fossify.messages.extensions.deleteSmsDraft
 import org.fossify.messages.extensions.dialNumber
+import org.fossify.messages.extensions.emptyBlockedMessagesForConversation
 import org.fossify.messages.extensions.emptyMessagesRecycleBinForConversation
 import org.fossify.messages.extensions.filterNotInByKey
 import org.fossify.messages.extensions.getAddresses
@@ -160,6 +161,7 @@ import org.fossify.messages.helpers.CAPTURE_AUDIO_INTENT
 import org.fossify.messages.helpers.CAPTURE_PHOTO_INTENT
 import org.fossify.messages.helpers.CAPTURE_VIDEO_INTENT
 import org.fossify.messages.helpers.FILE_SIZE_NONE
+import org.fossify.messages.helpers.IS_BLOCKED_BIN
 import org.fossify.messages.helpers.IS_LAUNCHED_FROM_SHORTCUT
 import org.fossify.messages.helpers.IS_RECYCLE_BIN
 import org.fossify.messages.helpers.MESSAGES_LIMIT
@@ -220,6 +222,7 @@ class ThreadActivity : SimpleActivity() {
     private var allMessagesFetched = false
     private var isJumpingToMessage = false
     private var isRecycleBin = false
+    private var isBlockedBin = false
     private var isLaunchedFromShortcut = false
 
     private var isScheduledMessage: Boolean = false
@@ -263,6 +266,7 @@ class ThreadActivity : SimpleActivity() {
             binding.threadToolbar.title = it
         }
         isRecycleBin = intent.getBooleanExtra(IS_RECYCLE_BIN, false)
+        isBlockedBin = intent.getBooleanExtra(IS_BLOCKED_BIN, false)
         isLaunchedFromShortcut = intent.getBooleanExtra(IS_LAUNCHED_FROM_SHORTCUT, false)
 
         bus = EventBus.getDefault()
@@ -356,9 +360,9 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.delete).isVisible = threadItems.isNotEmpty()
             findItem(R.id.restore).isVisible = threadItems.isNotEmpty() && isRecycleBin
             findItem(R.id.archive).isVisible =
-                threadItems.isNotEmpty() && conversation?.isArchived == false && !isRecycleBin && archiveAvailable
+                threadItems.isNotEmpty() && conversation?.isArchived == false && (!isRecycleBin && !isBlockedBin) && archiveAvailable
             findItem(R.id.unarchive).isVisible =
-                threadItems.isNotEmpty() && conversation?.isArchived == true && !isRecycleBin && archiveAvailable
+                threadItems.isNotEmpty() && conversation?.isArchived == true && (!isRecycleBin && !isBlockedBin) && archiveAvailable
             findItem(R.id.rename_conversation).isVisible =
                 participants.size > 1 && conversation != null && !isRecycleBin
             findItem(R.id.conversation_details).isVisible = conversation != null && !isRecycleBin
@@ -431,8 +435,12 @@ class ThreadActivity : SimpleActivity() {
     private fun setupCachedMessages(callback: () -> Unit) {
         ensureBackgroundThread {
             messages = try {
-                if (isRecycleBin) {
-                    messagesDB.getThreadMessagesFromRecycleBin(threadId)
+                if (isRecycleBin || isBlockedBin) {
+                    if (isRecycleBin) {
+                        messagesDB.getThreadMessagesFromRecycleBin(threadId)
+                    } else {
+                        messagesDB.getBlockedThreadMessages(threadId)
+                    }
                 } else {
                     if (config.useRecycleBin) {
                         messagesDB.getNonRecycledThreadMessages(threadId)
@@ -572,6 +580,7 @@ class ThreadActivity : SimpleActivity() {
                 recyclerView = binding.threadMessagesList,
                 itemClick = { handleItemClick(it) },
                 isRecycleBin = isRecycleBin,
+                isBlockedBin = isBlockedBin,
                 deleteMessages = { messages, toRecycleBin, fromRecycleBin ->
                     deleteMessages(
                         messages,
@@ -1126,8 +1135,12 @@ class ThreadActivity : SimpleActivity() {
         val confirmationMessage = R.string.delete_whole_conversation_confirmation
         ConfirmationDialog(this, getString(confirmationMessage)) {
             ensureBackgroundThread {
-                if (isRecycleBin) {
-                    emptyMessagesRecycleBinForConversation(threadId)
+                if (isRecycleBin || isBlockedBin) {
+                    if (isRecycleBin) {
+                        emptyMessagesRecycleBinForConversation(threadId)
+                    } else {
+                        emptyBlockedMessagesForConversation(threadId)
+                    }
                 } else {
                     deleteConversation(threadId)
                 }

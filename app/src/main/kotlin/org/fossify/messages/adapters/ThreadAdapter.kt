@@ -1,5 +1,6 @@
 package org.fossify.messages.adapters
 
+import android.R.attr.fontStyle
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
@@ -91,6 +92,7 @@ class ThreadAdapter(
     recyclerView: MyRecyclerView,
     itemClick: (Any) -> Unit,
     val isRecycleBin: Boolean,
+    val isBlockedBin: Boolean,
     val deleteMessages: (messages: List<Message>, toRecycleBin: Boolean, fromRecycleBin: Boolean) -> Unit
 ) : MyRecyclerViewListAdapter<ThreadItem>(activity, recyclerView, ThreadItemDiffCallback(), itemClick) {
     private var fontSize = activity.getTextSize()
@@ -269,18 +271,18 @@ class ThreadAdapter(
             return
         }
 
-        val baseString = if (activity.config.useRecycleBin && !isRecycleBin) {
+        val baseString = if (activity.config.useRecycleBin && (!isRecycleBin && !isBlockedBin)) {
             org.fossify.commons.R.string.move_to_recycle_bin_confirmation
         } else {
             org.fossify.commons.R.string.deletion_confirmation
         }
         val question = String.format(resources.getString(baseString), items)
 
-        DeleteConfirmationDialog(activity, question, activity.config.useRecycleBin && !isRecycleBin) { skipRecycleBin ->
+        DeleteConfirmationDialog(activity, question, activity.config.useRecycleBin && (!isRecycleBin && !isBlockedBin)) { skipRecycleBin ->
             ensureBackgroundThread {
                 val messagesToRemove = getSelectedItems()
                 if (messagesToRemove.isNotEmpty()) {
-                    val toRecycleBin = !skipRecycleBin && activity.config.useRecycleBin && !isRecycleBin
+                    val toRecycleBin = !skipRecycleBin && activity.config.useRecycleBin && (!isRecycleBin && !isBlockedBin)
                     deleteMessages(messagesToRemove.filterIsInstance<Message>(), toRecycleBin, false)
                 }
             }
@@ -355,7 +357,19 @@ class ThreadAdapter(
         ItemMessageBinding.bind(view).apply {
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
-                text = message.body
+                var tempText = message.body
+                if (message.isBlocked) {
+                    setTypeface(null, Typeface.ITALIC)
+                    tempText = if (isBlockedBin) {
+                        "#--- Blocked Message ---#\n\n" + message.body
+                    } else {
+                        "#--- Blocked Message ---#"
+                    }
+                }
+
+                text = tempText
+                setTypeface(null, Typeface.NORMAL)
+
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
                 beVisibleIf(message.body.isNotEmpty())
                 setOnLongClickListener {
