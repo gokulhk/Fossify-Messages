@@ -205,15 +205,7 @@ fun Context.getMessages(
         }
     }
 
-    // preserve is_blocked values
-    try {
-        val blockedMessages = messagesDB.getBlockedThreadMessages(threadId)
-        val messagesById = messages.associateBy { it.id }
-
-        blockedMessages.forEach { blockedMessage -> messagesById[blockedMessage.id]?.isBlocked = true }
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
+    mapBlockedMessageInformation(messages, threadId)
 
     messages = messages
         .filter { it.participants.isNotEmpty() }
@@ -223,6 +215,17 @@ fun Context.getMessages(
         .toMutableList() as ArrayList<Message>
 
     return messages
+}
+
+private fun Context.mapBlockedMessageInformation(messages: ArrayList<Message>, threadId: Long) {
+    runCatching {
+        val messagesById = messages.associateBy { it.id }
+        messagesDB.getBlockedThreadMessages(threadId).forEach { blockedMessage ->
+            messagesById[blockedMessage.id]?.isBlocked = true
+        }
+    }.onFailure {
+        it.printStackTrace()
+    }
 }
 
 // as soon as a message contains multiple recipients it counts as an MMS instead of SMS
@@ -866,7 +869,7 @@ fun Context.removeAllBlockedConversations(callback: (() -> Unit)? = null) {
             for (conversation in conversationsDB.getAllBlocked()) {
                 deleteConversation(conversation.threadId)
             }
-            toast(R.string.archive_emptied_successfully)
+            toast(R.string.blocked_emptied_successfully)
             callback?.invoke()
         } catch (_: Exception) {
             toast(org.fossify.commons.R.string.unknown_error_occurred)

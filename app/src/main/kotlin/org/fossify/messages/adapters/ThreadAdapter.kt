@@ -1,6 +1,5 @@
 package org.fossify.messages.adapters
 
-import android.R.attr.fontStyle
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
@@ -283,18 +282,18 @@ class ThreadAdapter(
             return
         }
 
-        val baseString = if (activity.config.useRecycleBin && (!isRecycleBin && !isBlockedBin)) {
+        val baseString = if (activity.config.useRecycleBin && !isRecycleBin) {
             org.fossify.commons.R.string.move_to_recycle_bin_confirmation
         } else {
             org.fossify.commons.R.string.deletion_confirmation
         }
         val question = String.format(resources.getString(baseString), items)
 
-        DeleteConfirmationDialog(activity, question, activity.config.useRecycleBin && (!isRecycleBin && !isBlockedBin)) { skipRecycleBin ->
+        DeleteConfirmationDialog(activity, question, activity.config.useRecycleBin && !isRecycleBin) { skipRecycleBin ->
             ensureBackgroundThread {
                 val messagesToRemove = getSelectedItems()
                 if (messagesToRemove.isNotEmpty()) {
-                    val toRecycleBin = !skipRecycleBin && activity.config.useRecycleBin && (!isRecycleBin && !isBlockedBin)
+                    val toRecycleBin = !skipRecycleBin && activity.config.useRecycleBin && !isRecycleBin
                     deleteMessages(messagesToRemove.filterIsInstance<Message>(), toRecycleBin, false)
                 }
             }
@@ -369,19 +368,16 @@ class ThreadAdapter(
         ItemMessageBinding.bind(view).apply {
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
-                var tempText = message.body
+                var tempBody = message.body
                 if (message.isBlocked) {
-                    setTypeface(null, Typeface.ITALIC)
-                    tempText = if (isBlockedBin) {
-                        "#--- Blocked Message ---#\n\n" + message.body
+                    tempBody = if (isBlockedBin) {
+                        R.string.blocked_message_label.toString() + "\n\n" + message.body
                     } else {
-                        "#--- Blocked Message ---#"
+                        R.string.blocked_message_label.toString()
                     }
                 }
 
-                text = tempText
-                setTypeface(null, Typeface.NORMAL)
-
+                text = tempBody
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
                 beVisibleIf(message.body.isNotEmpty())
                 setOnLongClickListener {

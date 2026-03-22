@@ -4,13 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.extensions.areSystemAnimationsEnabled
-import org.fossify.commons.extensions.beGoneIf
-import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.viewBinding
+import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
@@ -38,10 +32,10 @@ class BlockedConversationsActivity : SimpleActivity() {
     setContentView(binding.root)
     setupOptionsMenu()
 
-      setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
-      setupMaterialScrollListener(
-          scrollingView = binding.conversationsList,
-          topAppBar = binding.blockedAppbar
+    setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
+    setupMaterialScrollListener(
+        scrollingView = binding.conversationsList,
+        topAppBar = binding.blockedAppbar,
     )
 
     loadBlockedConversations()

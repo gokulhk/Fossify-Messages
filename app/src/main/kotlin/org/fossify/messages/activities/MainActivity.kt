@@ -408,7 +408,7 @@ class MainActivity : SimpleActivity() {
         val sortedConversations = conversations
             .filter {
                 it.title.isEmpty() ||
-                        !ReceiverUtils.doesSMSContainBlockedKeywords(config, it.title, "")
+                    !ReceiverUtils.doesSMSContainBlockedKeywords(config, it.title, "")
             }
             .sortedWith(
                 compareByDescending<Conversation> {

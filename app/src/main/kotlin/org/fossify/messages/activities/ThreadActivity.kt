@@ -360,9 +360,9 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.delete).isVisible = threadItems.isNotEmpty()
             findItem(R.id.restore).isVisible = threadItems.isNotEmpty() && isRecycleBin
             findItem(R.id.archive).isVisible =
-                threadItems.isNotEmpty() && conversation?.isArchived == false && (!isRecycleBin && !isBlockedBin) && archiveAvailable
+                threadItems.isNotEmpty() && conversation?.isArchived == false && !isRecycleBin && archiveAvailable
             findItem(R.id.unarchive).isVisible =
-                threadItems.isNotEmpty() && conversation?.isArchived == true && (!isRecycleBin && !isBlockedBin) && archiveAvailable
+                threadItems.isNotEmpty() && conversation?.isArchived == true && !isRecycleBin && archiveAvailable
             findItem(R.id.rename_conversation).isVisible =
                 participants.size > 1 && conversation != null && !isRecycleBin
             findItem(R.id.conversation_details).isVisible = conversation != null && !isRecycleBin
@@ -1135,12 +1135,10 @@ class ThreadActivity : SimpleActivity() {
         val confirmationMessage = R.string.delete_whole_conversation_confirmation
         ConfirmationDialog(this, getString(confirmationMessage)) {
             ensureBackgroundThread {
-                if (isRecycleBin || isBlockedBin) {
-                    if (isRecycleBin) {
-                        emptyMessagesRecycleBinForConversation(threadId)
-                    } else {
-                        emptyBlockedMessagesForConversation(threadId)
-                    }
+                if (isRecycleBin) {
+                    emptyMessagesRecycleBinForConversation(threadId)
+                } else if (isBlockedBin) { // TODO: it is deleting only blocked message but not the entire conversation. this is not required and else makes sense.
+                    emptyBlockedMessagesForConversation(threadId)
                 } else {
                     deleteConversation(threadId)
                 }
