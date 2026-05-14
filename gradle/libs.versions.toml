@@ -1,9 +1,9 @@
 [versions]
 #jetbrains
-kotlin = "2.3.10"
-kotlinxSerializationJson = "1.10.0"
+kotlin = "2.3.21"
+kotlinxSerializationJson = "1.11.0"
 #KSP
-ksp = "2.3.6"
+ksp = "2.3.7"
 #Detekt
 detekt = "1.23.8"
 detektCompose = "0.4.28"
@@ -21,7 +21,7 @@ commons = "6.1.6"
 mmslib = "1.0.0"
 indicator-fast-scroll = "4524cd0b61"
 #Gradle
-gradlePlugins-agp = "9.1.0"
+gradlePlugins-agp = "9.2.0"
 #build
 app-build-compileSDKVersion = "36"
 app-build-targetSDK = "36"
