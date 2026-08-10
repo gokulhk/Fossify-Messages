@@ -94,6 +94,7 @@ class ThreadAdapter(
     recyclerView: MyRecyclerView,
     itemClick: (Any) -> Unit,
     val isRecycleBin: Boolean,
+    val isBlockedBin: Boolean,
     val deleteMessages: (messages: List<Message>, toRecycleBin: Boolean, fromRecycleBin: Boolean) -> Unit
 ) : MyRecyclerViewListAdapter<ThreadItem>(activity, recyclerView, ThreadItemDiffCallback(), itemClick) {
     private var fontSize = activity.getTextSize()
@@ -367,7 +368,16 @@ class ThreadAdapter(
         ItemMessageBinding.bind(view).apply {
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
-                text = message.body
+                var tempBody = message.body
+                if (message.isBlocked) {
+                    tempBody = if (isBlockedBin) {
+                        R.string.blocked_message_label.toString() + "\n\n" + message.body
+                    } else {
+                        R.string.blocked_message_label.toString()
+                    }
+                }
+
+                text = tempBody
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
                 beVisibleIf(message.body.isNotEmpty())
                 setOnLongClickListener {

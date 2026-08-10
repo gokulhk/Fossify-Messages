@@ -63,6 +63,7 @@ import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getMessages
 import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.messagesDB
+import org.fossify.messages.helpers.ReceiverUtils
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
@@ -179,6 +180,7 @@ class MainActivity : SimpleActivity() {
             when (menuItem.itemId) {
                 R.id.show_recycle_bin -> launchRecycleBin()
                 R.id.show_archived -> launchArchivedConversations()
+                R.id.show_blocked -> launchBlockedConversations()
                 R.id.settings -> launchSettings()
                 R.id.about -> launchAbout()
                 else -> return@setOnMenuItemClickListener false
@@ -404,6 +406,10 @@ class MainActivity : SimpleActivity() {
         cached: Boolean = false,
     ) {
         val sortedConversations = conversations
+            .filter {
+                it.title.isEmpty() ||
+                    !ReceiverUtils.doesSMSContainBlockedKeywords(config, it.title, "")
+            }
             .sortedWith(
                 compareByDescending<Conversation> {
                     config.pinnedConversations.contains(it.threadId.toString())
@@ -619,6 +625,11 @@ class MainActivity : SimpleActivity() {
     private fun launchArchivedConversations() {
         hideKeyboard()
         startActivity(Intent(applicationContext, ArchivedConversationsActivity::class.java))
+    }
+
+    private fun launchBlockedConversations() {
+        hideKeyboard()
+        startActivity(Intent(applicationContext, BlockedConversationsActivity::class.java))
     }
 
     private fun launchSettings() {

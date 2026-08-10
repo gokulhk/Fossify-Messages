@@ -205,6 +205,8 @@ fun Context.getMessages(
         }
     }
 
+    mapBlockedMessageInformation(messages, threadId)
+
     messages = messages
         .filter { it.participants.isNotEmpty() }
         .filterNot { it.isScheduled && it.millis() < System.currentTimeMillis() }
@@ -213,6 +215,17 @@ fun Context.getMessages(
         .toMutableList() as ArrayList<Message>
 
     return messages
+}
+
+private fun Context.mapBlockedMessageInformation(messages: ArrayList<Message>, threadId: Long) {
+    runCatching {
+        val messagesById = messages.associateBy { it.id }
+        messagesDB.getBlockedThreadMessages(threadId).forEach { blockedMessage ->
+            messagesById[blockedMessage.id]?.isBlocked = true
+        }
+    }.onFailure {
+        it.printStackTrace()
+    }
 }
 
 // as soon as a message contains multiple recipients it counts as an MMS instead of SMS
@@ -850,6 +863,20 @@ fun Context.removeAllArchivedConversations(callback: (() -> Unit)? = null) {
     }
 }
 
+fun Context.removeAllBlockedConversations(callback: (() -> Unit)? = null) {
+    ensureBackgroundThread {
+        try {
+            for (conversation in conversationsDB.getAllBlocked()) {
+                deleteConversation(conversation.threadId)
+            }
+            toast(R.string.blocked_emptied_successfully)
+            callback?.invoke()
+        } catch (_: Exception) {
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
+        }
+    }
+}
+
 fun Context.deleteConversation(threadId: Long) {
     var uri = Sms.CONTENT_URI
     val selection = "${Sms.THREAD_ID} = ?"
@@ -909,6 +936,13 @@ fun Context.emptyMessagesRecycleBin() {
 
 fun Context.emptyMessagesRecycleBinForConversation(threadId: Long) {
     val messages = messagesDB.getThreadMessagesFromRecycleBin(threadId)
+    for (message in messages) {
+        deleteMessage(message.id, message.isMMS)
+    }
+}
+
+fun Context.emptyBlockedMessagesForConversation(threadId: Long) {
+    val messages = messagesDB.getBlockedThreadMessages(threadId)
     for (message in messages) {
         deleteMessage(message.id, message.isMMS)
     }

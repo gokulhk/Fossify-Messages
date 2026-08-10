@@ -12,14 +12,14 @@ interface ConversationsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertOrUpdate(conversation: Conversation): Long
 
-    @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 0")
+    @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id AND messages.is_blocked = 0 ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 0 AND (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id AND messages.is_blocked = 0) > 0")
     fun getNonArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
     fun getNonArchived(): List<Conversation> {
         return getNonArchivedWithLatestSnippet().map { it.toConversation() }
     }
 
-    @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 1")
+    @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id AND messages.is_blocked = 0 ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 1 AND (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id AND messages.is_blocked = 0) > 0")
     fun getAllArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
     fun getAllArchived(): List<Conversation> {
@@ -31,6 +31,13 @@ interface ConversationsDao {
 
     fun getAllWithMessagesInRecycleBin(): List<Conversation> {
         return getAllWithMessagesInRecycleBinWithLatestSnippet().map { it.toConversation() }
+    }
+
+    @Query("SELECT (SELECT body FROM messages WHERE messages.thread_id = conversations.thread_id AND messages.is_blocked = 1 ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE (SELECT COUNT(*) FROM messages WHERE messages.thread_id = conversations.thread_id AND messages.is_blocked = 1) > 0")
+    fun getAllBlockedMessagesWithLatestSnippet(): List<ConversationWithSnippetOverride>
+
+    fun getAllBlocked(): List<Conversation> {
+        return getAllBlockedMessagesWithLatestSnippet().map { it.toConversation() }
     }
 
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")

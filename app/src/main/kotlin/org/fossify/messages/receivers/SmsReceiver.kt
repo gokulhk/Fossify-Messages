@@ -12,6 +12,7 @@ import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.PhoneNumber
 import org.fossify.commons.models.SimpleContact
+import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getNameFromAddress
 import org.fossify.messages.extensions.getNotificationBitmap
@@ -22,7 +23,7 @@ import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
 import org.fossify.messages.extensions.updateConversationArchivedStatus
-import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
+import org.fossify.messages.helpers.ReceiverUtils.doesSMSContainBlockedKeywords
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.models.Message
@@ -45,7 +46,6 @@ class SmsReceiver : BroadcastReceiver() {
                 val status = parts.last().status
                 val body = buildString { parts.forEach { append(it.messageBody.orEmpty()) } }
 
-                if (isMessageFilteredOut(appContext, body)) return@ensureBackgroundThread
                 if (appContext.isNumberBlocked(address)) return@ensureBackgroundThread
                 if (appContext.baseConfig.blockUnknownNumbers) {
                     val privateCursor =
@@ -118,6 +118,8 @@ class SmsReceiver : BroadcastReceiver() {
             anniversaries = ArrayList()
         )
 
+        val shouldBlockMessage = doesSMSContainBlockedKeywords(context.config, senderName, body);
+
         val message = Message(
             id = newMessageId,
             body = body,
@@ -132,7 +134,9 @@ class SmsReceiver : BroadcastReceiver() {
             senderPhoneNumber = address,
             senderName = senderName,
             senderPhotoUri = photoUri,
-            subscriptionId = subscriptionId
+            subscriptionId = subscriptionId,
+            false,
+            shouldBlockMessage
         )
 
         context.messagesDB.insertOrUpdate(message)
@@ -143,13 +147,16 @@ class SmsReceiver : BroadcastReceiver() {
 
         refreshMessages()
         refreshConversations()
-        context.showReceivedMessageNotification(
-            messageId = newMessageId,
-            address = address,
-            senderName = senderName,
-            body = body,
-            threadId = threadId,
-            bitmap = bitmap
-        )
+
+         if (!shouldBlockMessage) {
+            context.showReceivedMessageNotification(
+                messageId = newMessageId,
+                address = address,
+                senderName = senderName,
+                body = body,
+                threadId = threadId,
+                bitmap = bitmap
+            )
+         }
     }
 }
