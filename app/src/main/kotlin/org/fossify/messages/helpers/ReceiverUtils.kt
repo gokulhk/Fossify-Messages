@@ -21,8 +21,8 @@ object ReceiverUtils {
         body: String,
     ): Boolean {
         for (blockedKeyword in config.blockedKeywords) {
-            if (
-                body.contains(blockedKeyword, ignoreCase = true) || senderName.contains(blockedKeyword, ignoreCase = true)
+            if (body.contains(blockedKeyword, ignoreCase = true)
+                || senderName.contains(blockedKeyword, ignoreCase = true)
             ) {
                 return true
             }
